@@ -3,7 +3,7 @@
 
 #include "stdafx.h"
 #include "MovingTriangle.h"
-#include "Painter.h"
+#include "CounterPainter.h"
 
 #define MAX_LOADSTRING 100
 
@@ -56,8 +56,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     return (int) msg.wParam;
 }
 
-
-
 //
 //  FUNCTION: MyRegisterClass()
 //
@@ -107,10 +105,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
+   painter_ptr = mmc::Painter::create<mmc::CounterPainter>(hWnd);
+
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
-
-   painter_ptr = mmc::Painter::create(hWnd);
 
    return TRUE;
 }

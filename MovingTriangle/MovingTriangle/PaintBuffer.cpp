@@ -2,13 +2,23 @@
 
 #include "PaintBuffer.h"
 
+static RECT getClientRect(HWND window)
+{
+    RECT r;
+    GetClientRect(window, &r);
+    return r;
+}
+
+static HBITMAP createCompatibleBitmap(HDC dc, const RECT& r)
+{ return CreateCompatibleBitmap(dc, r.right - r.left, r.bottom - r.top); }
+
 mmc::PaintBuffer::PaintBuffer(HWND window) :
     ivWindow(window),
     ivPaintStruct(),
     ivDeviceContext(BeginPaint(ivWindow, &ivPaintStruct)),
     ivBufferContext(CreateCompatibleDC(ivDeviceContext)),
     ivClientRect(getClientRect(ivWindow)),
-    ivBuffer(CreateCompatibleBitmap(ivDeviceContext, ivClientRect.right - ivClientRect.left, ivClientRect.bottom - ivClientRect.top)),
+    ivBuffer(createCompatibleBitmap(ivDeviceContext, ivClientRect)),
     ivSaveDC(SaveDC(ivBufferContext))
 {
     SelectObject(ivBufferContext, ivBuffer);

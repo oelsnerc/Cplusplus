@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CounterPainter.h" />
     <ClInclude Include="MovingTriangle.h" />
     <ClInclude Include="PaintBuffer.h" />
     <ClInclude Include="Painter.h" />
@@ -155,6 +156,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CounterPainter.cpp" />
     <ClCompile Include="MovingTriangle.cpp" />
     <ClCompile Include="PaintBuffer.cpp" />
     <ClCompile Include="Painter.cpp" />

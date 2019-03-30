@@ -4,12 +4,6 @@
 
 namespace mmc
 {
-    inline RECT getClientRect(HWND window)
-    {
-        RECT result;
-        GetClientRect(window, &result);
-        return result;
-    }
 
     class PaintBuffer
     {
@@ -34,6 +28,6 @@ namespace mmc
 
         operator HDC () { return ivBufferContext; }
 
-        const RECT& rect() const { return ivClientRect;  }
+        const RECT& rect() const { return ivClientRect; }
     };
 }
