@@ -40,6 +40,7 @@ LRESULT mmc::Painter::paint(HWND hWnd)
     ++ivCounter;
 
     mmc::PaintBuffer buffer(hWnd);
+
     Graphics g(buffer);
     auto rect = getRect(buffer.rect());
 

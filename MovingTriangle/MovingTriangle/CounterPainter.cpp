@@ -5,20 +5,19 @@
 #include <objidl.h>
 #include <gdiplus.h>
 using namespace Gdiplus;
-#pragma comment (lib,"Gdiplus.lib")
 
 #include <sstream>
 
 namespace colors
 {
-    static const Color backGround(255, 128, 128, 255);
-    static const Color text(255, 0, 0, 255);
+    static const Color& backGround = Color::Wheat;
+    static const Color& text = Color::Black;
 }
 
 //*****************************************************************************
 static void clear(Graphics& g, const Rect& rect)
 {
-    static const SolidBrush brush(colors::backGround);
+    static const SolidBrush brush( colors::backGround );
     g.FillRectangle(&brush, rect);
 }
 
@@ -33,16 +32,7 @@ static void drawString(Graphics& g, INT x, INT y, INT size, const std::wostrings
     g.DrawString(str.str().c_str(), -1, &font, pointF, &brush);
 }
 
-mmc::CounterPainter::CounterPainter(HWND hWnd) :
-    mmc::Painter()
-{
-}
-
-mmc::CounterPainter::~CounterPainter()
-{
-}
-
-LRESULT mmc::CounterPainter::do_paint(Gdiplus::Graphics& g, const Gdiplus::Rect& rect)
+LRESULT CounterPainter::do_paint(Gdiplus::Graphics& g, const Gdiplus::Rect& rect)
 {
     clear(g, rect);
 

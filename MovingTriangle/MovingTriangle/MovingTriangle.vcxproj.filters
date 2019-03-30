@@ -36,6 +36,9 @@
     <ClInclude Include="CounterPainter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TrianglePainter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -51,6 +54,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CounterPainter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TrianglePainter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -4,8 +4,10 @@
 #include "stdafx.h"
 #include "MovingTriangle.h"
 #include "CounterPainter.h"
+#include "TrianglePainter.h"
 
 #define MAX_LOADSTRING 100
+#define ID_PAINT_TIMER 101
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -83,6 +85,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 }
 
 static mmc::Painter::ptr painter_ptr;
+static UINT painter_timerID = 0;
 //
 //   FUNCTION: InitInstance(HINSTANCE, int)
 //
@@ -105,7 +108,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
-   painter_ptr = mmc::Painter::create<mmc::CounterPainter>(hWnd);
+   painter_ptr = mmc::Painter::create<TrianglePainter>(hWnd);
+   painter_timerID = SetTimer(hWnd, ID_PAINT_TIMER, 2, NULL);
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
@@ -150,6 +154,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_ERASEBKGND: // don't let Windows clear the background, avoid the flicker
         result = 1;
+        break;
+    case WM_TIMER:
+        switch (wParam)
+        {
+        case ID_PAINT_TIMER: InvalidateRect(hWnd, NULL, FALSE); break;
+        }
         break;
     case WM_DESTROY:
         PostQuitMessage(0);
