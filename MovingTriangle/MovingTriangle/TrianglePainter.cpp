@@ -36,6 +36,17 @@ static Shape::Point getRandomDirection(int max)
     return Shape::Point{ getRandomDirectionValue(max), getRandomDirectionValue(max) };
 }
 
+static INT getRandomColorTone() { return getRandomBetween(0, 255); }
+static COLORREF getRandomColor()
+{
+    return RGB(getRandomColorTone(), getRandomColorTone(), getRandomColorTone() );
+}
+
+static HPEN getRandomPen()
+{
+    return CreatePen(PS_SOLID, 1, getRandomColor() /* GetSysColor(COLOR_WINDOWTEXT) */);
+}
+
 //-----------------------------------------------------------------------------
 static void move(LONG& p, LONG& d, int min, int max)
 {
@@ -59,8 +70,15 @@ static void movePoint(Shape::Point& p, Shape::Point& d, const RECT& r)
     move(p.y, d.y, r.top, r.bottom);
 }
 
+static void moveShape(Shape& dest, const Shape& source, const RECT& rect)
+{
+    dest = source;
+    dest.move(rect);
+}
+
 //*****************************************************************************
 Shape::Shape(const RECT& rect, size_t numberOfPoints) :
+    ivPen(getRandomPen()),
     ivPoints(numberOfPoints),
     ivDirections(numberOfPoints)
 {
@@ -68,9 +86,22 @@ Shape::Shape(const RECT& rect, size_t numberOfPoints) :
     for (auto& d : ivDirections) { d = getRandomDirection(5); }
 }
 
-void Shape::draw(HDC& hdc, const mmc::Pen& pen) const
+Shape::Shape(const Shape& other) :
+    ivPen(getRandomPen()),
+    ivPoints(other.ivPoints),
+    ivDirections(other.ivDirections)
+{}
+
+Shape& Shape::operator = (const Shape& other)
+{   // don't copy the Pen
+    ivPoints = other.ivPoints;
+    ivDirections = other.ivDirections;
+    return *this;
+}
+
+void Shape::draw(HDC& hdc) const
 {
-    auto s = mmc::select(hdc, pen);
+    auto s = mmc::select(hdc, ivPen);
 
     auto& last = ivPoints.back();
     MoveToEx(hdc, last.x, last.y, NULL);
@@ -94,7 +125,6 @@ static RECT getClientRect(HWND hWnd)
 }
 
 TrianglePainter::TrianglePainter(HWND hWnd) :
-    ivPen(CreatePen(PS_SOLID, 1, RGB(0, 0, 255) /* GetSysColor(COLOR_WINDOWTEXT) */)),
     ivShapes(100, Shape(getClientRect(hWnd), 3))
 {
 }
@@ -109,11 +139,9 @@ LRESULT TrianglePainter::do_paint(HDC& hdc, const RECT& rect)
 
     auto current = getCounter() % ivShapes.size();
     auto next = (getCounter()+1) % ivShapes.size();
+    moveShape(ivShapes[next], ivShapes[current], rect);
 
-    ivShapes[next] = ivShapes[current];
-    ivShapes[next].move(rect);
-
-    for (auto& s : ivShapes) { s.draw(hdc, ivPen); }
+    for (auto& s : ivShapes) { s.draw(hdc); }
 
     return LRESULT();
 }
