@@ -1,29 +1,28 @@
 #pragma once
 #include "Painter.h"
 
-#include <windows.h>
-#include <objidl.h>
-#include <gdiplus.h>
-
 #include <vector>
 
 struct Shape
 {
-    using Points = std::vector<Gdiplus::Point>;
-    using Directions = std::vector<Gdiplus::Point>;
+    using Point = POINT;
+    using Points = std::vector<Point>;
+    using Directions = std::vector<Point>;
 
     Points ivPoints;
     Directions ivDirections;
 
     explicit Shape(const RECT& rect, size_t numberOfPoints);
 
-    void draw(Gdiplus::Graphics&) const;
-    void move(const Gdiplus::Rect &);
+    void draw(HDC& hdc, const mmc::Pen& pen) const;
+    void move(const RECT & rect);
 };
 
 class TrianglePainter : public mmc::Painter
 {
 private:
+    mmc::Pen    ivPen;
+
     using Shapes = std::vector<Shape>;
     Shapes ivShapes;
 
@@ -32,6 +31,6 @@ public:
     ~TrianglePainter();
 
     // Inherited via Painter
-    LRESULT do_paint(Gdiplus::Graphics &, const Gdiplus::Rect &) override;
+    LRESULT do_paint(HDC& hdc, const RECT& rect) override;
 };
 

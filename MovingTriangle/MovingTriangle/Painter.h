@@ -1,31 +1,55 @@
 #pragma once
 
 #include "stdafx.h"
-#include <windows.h>
-#include <objidl.h>
-#include <gdiplus.h>
 #include <memory>
 
 namespace mmc
 {
-    struct GDIPlus
+    template<typename T>
+    struct Object
     {
-        ULONG_PTR   gdiplusToken;
-        explicit GDIPlus();
-        ~GDIPlus();
+        T ivObject;
+        explicit Object(T&& obj) : ivObject(std::forward<T>(obj)) {}
+        ~Object() { DeleteObject(ivObject); }
+
+        T& getObject() { return ivObject; }
+        const T& getObject() const { return ivObject; }
+
+        Object(const Object&) = delete;
+        Object& operator = (const Object&) = delete;
+
+        Object(Object&&) = default;
+        Object& operator = (Object&&) = default;
     };
+
+    using Pen = Object<HPEN>;
+
+    template<typename T>
+    struct Selector
+    {
+        HDC ivHdc;
+        T ivOld;
+        explicit Selector(HDC hdc, const T& obj) :
+            ivHdc(hdc),
+            ivOld( (T)SelectObject( ivHdc, obj ) )
+        {}
+        ~Selector() { SelectObject(ivHdc, ivOld); }
+    };
+
+    template<typename T>
+    inline Selector<T> select(HDC hdc, const Object<T>& obj)
+    { return Selector<T>(hdc, obj.getObject()); }
 
     class Painter
     {
     private:
-        GDIPlus gdiPlus;
         size_t  ivCounter;
 
     protected:
-        virtual LRESULT do_paint(Gdiplus::Graphics&, const Gdiplus::Rect&) = 0;
+        virtual LRESULT do_paint(HDC& hdc, const RECT& rect) = 0;
 
     public:
-        Painter() : gdiPlus(), ivCounter(0) {}
+        Painter() : ivCounter(0) {}
         virtual ~Painter() {};
 
         LRESULT paint(HWND hWnd);

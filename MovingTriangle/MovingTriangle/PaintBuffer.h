@@ -26,7 +26,7 @@ namespace mmc
 
         ~PaintBuffer();
 
-        operator HDC () { return ivBufferContext; }
+        operator HDC& () { return ivBufferContext; }
 
         const RECT& rect() const { return ivClientRect; }
     };

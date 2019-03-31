@@ -109,6 +109,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    }
 
    painter_ptr = mmc::Painter::create<TrianglePainter>(hWnd);
+   // painter_ptr = mmc::Painter::create<CounterPainter>();
    painter_timerID = SetTimer(hWnd, ID_PAINT_TIMER, 2, NULL);
 
    ShowWindow(hWnd, nCmdShow);

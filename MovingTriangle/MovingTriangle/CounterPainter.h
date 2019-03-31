@@ -5,5 +5,5 @@
 class CounterPainter : public mmc::Painter
 {
 protected:
-    LRESULT do_paint(Gdiplus::Graphics&, const Gdiplus::Rect&) override;
+    LRESULT do_paint(HDC& hdc, const RECT& rect) override;
 };

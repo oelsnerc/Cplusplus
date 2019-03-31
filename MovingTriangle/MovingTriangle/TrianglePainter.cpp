@@ -3,13 +3,10 @@
 #include <cstdlib>
 #include <vector>
 
-using namespace Gdiplus;
-
 //*****************************************************************************
-static void clear(Graphics& g, const Rect& rect)
+static void clear(HDC& hdc, const RECT& rect)
 {
-    static const SolidBrush brush(Color::White);
-    g.FillRectangle(&brush, rect);
+    FillRect(hdc, &rect, GetSysColorBrush(COLOR_WINDOW));
 }
 
 //-----------------------------------------------------------------------------
@@ -19,9 +16,9 @@ static INT getRandomBetween(INT min, INT max)
     return (r + min);
 }
 
-static Point getRandomPoint(const RECT& rect)
+static Shape::Point getRandomPoint(const RECT& rect)
 {
-    return Point(getRandomBetween(rect.left, rect.right), getRandomBetween(rect.top, rect.bottom));
+    return Shape::Point{ getRandomBetween(rect.left, rect.right), getRandomBetween(rect.top, rect.bottom) };
 }
 
 static int getRandomDirectionValue(int max)
@@ -34,11 +31,13 @@ static int getRandomDirectionValue(int max)
     return result;
 }
 
-static Point getRandomDirection(int max)
-{ return Point(getRandomDirectionValue(max), getRandomDirectionValue(max)); }
+static Shape::Point getRandomDirection(int max)
+{
+    return Shape::Point{ getRandomDirectionValue(max), getRandomDirectionValue(max) };
+}
 
 //-----------------------------------------------------------------------------
-static void move(int& p, int& d, int min, int max)
+static void move(LONG& p, LONG& d, int min, int max)
 {
     p += d;
     if (p < min)
@@ -54,10 +53,10 @@ static void move(int& p, int& d, int min, int max)
     }
 }
 
-static void movePoint(Point& p, Point& d, const Rect& r)
+static void movePoint(Shape::Point& p, Shape::Point& d, const RECT& r)
 {
-    move(p.X, d.X, r.GetLeft(), r.GetRight());
-    move(p.Y, d.Y, r.GetTop(), r.GetBottom());
+    move(p.x, d.x, r.left, r.right);
+    move(p.y, d.y, r.top, r.bottom);
 }
 
 //*****************************************************************************
@@ -69,14 +68,16 @@ Shape::Shape(const RECT& rect, size_t numberOfPoints) :
     for (auto& d : ivDirections) { d = getRandomDirection(5); }
 }
 
-void Shape::draw(Gdiplus::Graphics & g) const
+void Shape::draw(HDC& hdc, const mmc::Pen& pen) const
 {
-    static const Pen pen(Color::Blue);
-    g.DrawLines(&pen, ivPoints.data(), ivPoints.size());
-    g.DrawLine(&pen, ivPoints.back(), ivPoints.front());
+    auto s = mmc::select(hdc, pen);
+
+    auto& last = ivPoints.back();
+    MoveToEx(hdc, last.x, last.y, NULL);
+    PolylineTo(hdc, ivPoints.data(), ivPoints.size());
 }
 
-void Shape::move(const Gdiplus::Rect & rect)
+void Shape::move(const RECT& rect)
 {
     for (size_t i = 0; i < ivPoints.size(); ++i)
     {
@@ -92,13 +93,9 @@ static RECT getClientRect(HWND hWnd)
     return result;
 }
 
-static Rect getRect(const RECT& rect)
-{
-    return Rect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
-}
-
 TrianglePainter::TrianglePainter(HWND hWnd) :
-    ivShapes(50, Shape(getClientRect(hWnd), 3))
+    ivPen(CreatePen(PS_SOLID, 1, RGB(0, 0, 255) /* GetSysColor(COLOR_WINDOWTEXT) */)),
+    ivShapes(100, Shape(getClientRect(hWnd), 3))
 {
 }
 
@@ -106,9 +103,9 @@ TrianglePainter::~TrianglePainter()
 {
 }
 
-LRESULT TrianglePainter::do_paint(Gdiplus::Graphics & g, const Gdiplus::Rect & rect)
+LRESULT TrianglePainter::do_paint(HDC& hdc, const RECT& rect)
 {
-    clear(g, rect);
+    clear(hdc, rect);
 
     auto current = getCounter() % ivShapes.size();
     auto next = (getCounter()+1) % ivShapes.size();
@@ -116,7 +113,7 @@ LRESULT TrianglePainter::do_paint(Gdiplus::Graphics & g, const Gdiplus::Rect & r
     ivShapes[next] = ivShapes[current];
     ivShapes[next].move(rect);
 
-    for (auto& s : ivShapes) { s.draw(g); }
+    for (auto& s : ivShapes) { s.draw(hdc, ivPen); }
 
     return LRESULT();
 }
