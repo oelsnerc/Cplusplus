@@ -37,6 +37,10 @@ namespace mmc
     };
 
     template<typename T>
+    inline Selector<T> select(HDC hdc, const T& obj)
+    { return Selector<T>(hdc, obj); }
+
+    template<typename T>
     inline Selector<T> select(HDC hdc, const Object<T>& obj)
     { return Selector<T>(hdc, obj.getObject()); }
 

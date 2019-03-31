@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include "MovingTriangle.h"
 #include "CounterPainter.h"
-#include "TrianglePainter.h"
+#include "ShapePainter.h"
 
 #define MAX_LOADSTRING 100
 #define ID_PAINT_TIMER 101
@@ -86,6 +86,14 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 static mmc::Painter::ptr painter_ptr;
 static UINT painter_timerID = 0;
+
+static RECT getClientRect(HWND hWnd)
+{
+    RECT rect;
+    GetClientRect(hWnd, &rect);
+    return rect;
+}
+
 //
 //   FUNCTION: InitInstance(HINSTANCE, int)
 //
@@ -108,9 +116,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
-   painter_ptr = mmc::Painter::create<TrianglePainter>(hWnd);
+   painter_ptr = mmc::Painter::create< ShapePainter<100, shapes::Triangle> >(getClientRect(hWnd));
    // painter_ptr = mmc::Painter::create<CounterPainter>();
-   painter_timerID = SetTimer(hWnd, ID_PAINT_TIMER, 2, NULL);
+   painter_timerID = SetTimer(hWnd, ID_PAINT_TIMER, 10, NULL);
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
