@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{34C0A3B2-6D1D-4865-A3AC-DD049C70D847}</ProjectGuid>
+    <ProjectGuid>{121637C9-9A6B-4604-8693-BF86CCBA901E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>MovingTriangle</RootNamespace>
+    <RootNamespace>ClipboardToKeys</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -87,7 +87,6 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
@@ -101,7 +100,6 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
@@ -117,7 +115,6 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
@@ -135,7 +132,6 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
@@ -147,21 +143,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CounterPainter.h" />
-    <ClInclude Include="MovingTriangle.h" />
-    <ClInclude Include="PaintBuffer.h" />
-    <ClInclude Include="Painter.h" />
+    <ClInclude Include="ClipboardToKeys.h" />
+    <ClInclude Include="GetTextFromClipBoard.h" />
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="Shapes.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="ShapePainter.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MovingTriangle.cpp" />
-    <ClCompile Include="PaintBuffer.cpp" />
-    <ClCompile Include="Painter.cpp" />
-    <ClCompile Include="Shapes.cpp" />
+    <ClCompile Include="ClipboardToKeys.cpp" />
+    <ClCompile Include="EditControl.cpp" />
+    <ClCompile Include="GetTextFromClipBoard.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -170,10 +161,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="MovingTriangle.rc" />
+    <ResourceCompile Include="ClipboardToKeys.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="MovingTriangle.ico" />
+    <Image Include="ClipboardToKeys.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

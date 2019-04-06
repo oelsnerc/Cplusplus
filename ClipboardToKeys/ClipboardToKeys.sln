@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.489
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClipboardToKeys", "ClipboardToKeys\ClipboardToKeys.vcxproj", "{121637C9-9A6B-4604-8693-BF86CCBA901E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{121637C9-9A6B-4604-8693-BF86CCBA901E}.Debug|x64.ActiveCfg = Debug|x64
+		{121637C9-9A6B-4604-8693-BF86CCBA901E}.Debug|x64.Build.0 = Debug|x64
+		{121637C9-9A6B-4604-8693-BF86CCBA901E}.Debug|x86.ActiveCfg = Debug|Win32
+		{121637C9-9A6B-4604-8693-BF86CCBA901E}.Debug|x86.Build.0 = Debug|Win32
+		{121637C9-9A6B-4604-8693-BF86CCBA901E}.Release|x64.ActiveCfg = Release|x64
+		{121637C9-9A6B-4604-8693-BF86CCBA901E}.Release|x64.Build.0 = Release|x64
+		{121637C9-9A6B-4604-8693-BF86CCBA901E}.Release|x86.ActiveCfg = Release|Win32
+		{121637C9-9A6B-4604-8693-BF86CCBA901E}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0E17037E-CFAF-4B3B-88FB-593BC2D28F19}
+	EndGlobalSection
+EndGlobal
