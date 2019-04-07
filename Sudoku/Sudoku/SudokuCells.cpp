@@ -83,3 +83,61 @@ bool SudokuCells::solve()
     }
     return false;
 }
+
+//*****************************************************************************
+template<typename T>
+inline void writeBinary(std::ostream& stream, const T& value)
+{
+    stream.write(reinterpret_cast<const char*>(&value), sizeof(value));
+}
+
+template<typename T>
+inline T readBinary(std::istream& stream)
+{
+    T value;
+    stream.read(reinterpret_cast<char*>(&value), sizeof(value));
+    return value;
+}
+
+static const char magicWord[] = "SUDOKU";
+static void writeCell(std::ostream& stream, const SudokuCell& cell, size_t x, size_t y)
+{
+    if (cell.isCalculated()) { return; }
+    if (not cell.isSet()) { return;  }
+
+    writeBinary(stream, static_cast<uint8_t>(x));
+    writeBinary(stream, static_cast<uint8_t>(y));
+    writeBinary(stream, cell.getValue());
+}
+
+std::ostream& SudokuCells::writeTo(std::ostream& stream) const
+{
+    writeBinary(stream, magicWord);
+    writeBinary(stream, static_cast<uint8_t>(getDimension()));
+    for_each(writeCell, stream);
+
+    return stream;
+}
+
+SudokuCells SudokuCells::readFrom(std::istream& stream)
+{
+    char starter[sizeof(magicWord)];
+    stream.read(starter, sizeof(starter));
+
+    if (memcmp(magicWord, starter, sizeof(magicWord)) != 0)
+    {
+        throw std::invalid_argument("this is not a SUDOKU stream!");
+    }
+
+    SudokuCells result(readBinary<uint8_t>(stream));
+
+    while (stream.peek() != EOF)
+    {
+        auto x = readBinary<uint8_t>(stream);
+        auto y = readBinary<uint8_t>(stream);
+        auto v = readBinary<SudokuCell::value_t>(stream);
+        result.setCellValue(x, y, v);
+    }
+
+    return result;
+}

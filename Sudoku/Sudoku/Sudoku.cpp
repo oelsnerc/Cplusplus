@@ -4,7 +4,10 @@
 #include "framework.h"
 #include "sudoku.h"
 #include "SudokuPainter.h"
+#include "SudokuFileDlg.h"
 #include <stack>
+#include <string>
+#include <fstream>
 
 #define MAX_LOADSTRING 100
 
@@ -191,6 +194,53 @@ static void toggleMenuItem(HWND hWnd, UINT item)
     SetMenuItemInfo(hMenu, item, FALSE, &info);
 }
 
+static void newSudokuCells(SudokuCells&& newCells, HWND hWnd)
+{
+    cells = std::move(newCells);
+    cellStack = SudokuStack();
+    InvalidateRect(hWnd, NULL, FALSE);
+}
+
+static void saveCells(HWND hWnd)
+{
+    auto fileName = dialog::getSaveFileName(hWnd);
+
+    if (fileName.empty())
+    {
+        // MessageBox(NULL, L"Canceled", L"FileSave", MB_OK);
+        return;
+    }
+
+    {
+        std::ofstream file(fileName, std::ios::binary);
+        cells.writeTo(file);
+    }
+
+    MessageBox(NULL, fileName.c_str(), L"Sudoku saved to", MB_OK);
+}
+
+static void openCells(HWND hWnd)
+{
+    auto fileName = dialog::getOpenFileName(hWnd);
+
+    if (fileName.empty())
+    {
+        // MessageBox(NULL, L"Canceled", L"FileOpen", MB_OK);
+        return;
+    }
+
+    try
+    {
+        std::ifstream file(fileName, std::ios::binary);
+        newSudokuCells( SudokuCells::readFrom(file), hWnd);
+    }
+    catch (std::exception&)
+    {
+        MessageBox(NULL, fileName.c_str(), L"Could not read SUDOKU from", MB_OK | MB_ICONERROR);
+        return;
+    }
+}
+
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -244,17 +294,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     InvalidateRect(hWnd, NULL, FALSE);
                 }
                 break;
-            case ID_FILE_NEW:
-                cells = SudokuCells(dimension);
-                cellStack = SudokuStack();
-                InvalidateRect(hWnd, NULL, FALSE);
-                break;
             case ID_EDIT_SOLVE:
                 cells.solve();
                 InvalidateRect(hWnd, NULL, FALSE);
                 break;
             case ID_EDIT_SOLVEWHILEENTER:
                 toggleMenuItem(hWnd, ID_EDIT_SOLVEWHILEENTER);
+                break;
+
+            case ID_FILE_NEW:
+                newSudokuCells(SudokuCells(dimension), hWnd);
+                break;
+            case ID_FILE_SAVE:
+                saveCells(hWnd);
+                break;
+            case ID_FILE_OPEN:
+                openCells(hWnd);
                 break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);

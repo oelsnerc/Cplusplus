@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <vector>
 #include <stack>
+#include <ostream>
+#include <istream>
 
 class SudokuCell
 {
@@ -155,6 +157,10 @@ public:
             }
         }
     }
+
+    std::ostream& writeTo(std::ostream& stream) const;
+    static SudokuCells readFrom(std::istream& stream);
+
 };
 
 using SudokuStack = std::stack<SudokuCells>;

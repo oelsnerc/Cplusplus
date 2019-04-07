@@ -157,12 +157,14 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Sudoku.h" />
     <ClInclude Include="SudokuCells.h" />
+    <ClInclude Include="SudokuFileDlg.h" />
     <ClInclude Include="SudokuPainter.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Sudoku.cpp" />
     <ClCompile Include="SudokuCells.cpp" />
+    <ClCompile Include="SudokuFileDlg.cpp" />
     <ClCompile Include="SudokuPainter.cpp" />
   </ItemGroup>
   <ItemGroup>
