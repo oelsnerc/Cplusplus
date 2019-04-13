@@ -45,6 +45,9 @@ public:
         return result;
     }
 
+    value_t getFirstPossiblity() const;
+    value_t getSecondPossiblity() const;
+
     void removePossibility(value_t value)
     { ivPossibilities &= ~getBit(value); }
 

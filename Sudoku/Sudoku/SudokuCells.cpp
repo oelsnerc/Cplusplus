@@ -53,16 +53,27 @@ void SudokuCells::setCellValue(size_t x, size_t y, SudokuCell::value_t v)
     toCell(x, y).setValue(v);
 }
 
-static SudokuCell::value_t getOnlyPossibility(SudokuCell& cell)
+static size_t getFirstBitIndex(size_t v)
 {
-    for (SudokuCell::value_t i = 1; i < 16; ++i)
+    size_t index = 0;
+    while (v > 0)
     {
-        if (cell.isPossible(i))
-        {
-            return i;
-        }
+        ++index;
+        if (v & 1) { break; }
+        v >>= 1;
     }
-    return 0;
+    return index;
+}
+
+SudokuCell::value_t SudokuCell::getFirstPossiblity() const
+{
+    return static_cast<value_t>(getFirstBitIndex(ivPossibilities));
+}
+
+SudokuCell::value_t SudokuCell::getSecondPossiblity() const
+{
+    auto v = ivPossibilities;
+    return static_cast<value_t>(getFirstBitIndex( v & (v-1) ));
 }
 
 bool SudokuCells::solve()
@@ -73,17 +84,22 @@ bool SudokuCells::solve()
         cellsChanged = 0;
         auto conflict = for_each([&](SudokuCell & cell, size_t x, size_t y)
             {
-                if (cell.isSet()) { return false; }
-                if (cell.isCalculated()) { return false; }
-                const auto cnt = cell.countPossibilities();
-                if (cnt == 0) { return true; }
-                if (cnt == 1)
-                {
+                if (cell.isSet()) { return false; }     // already set ... nothing to do
+
+                const auto possiblities = cell.countPossibilities();
+                if (possiblities == 0) { return true; } // conflict!!!
+                if (possiblities > 2) { return false; } // can't solve
+
+                if (possiblities == 1)
+                {   // only one possiblity .. let's set it
                     cell.setCalculated();
-                    setCellValue(x, y, getOnlyPossibility(cell));
+                    setCellValue(x, y, cell.getFirstPossiblity());
                     ++cellsChanged;
                     return false;
                 }
+
+                // 2 possibilities left .. let's check both of them
+                // TODO
                 return false;
             });
         if (conflict) { return true; }
