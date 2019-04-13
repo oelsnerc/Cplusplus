@@ -135,27 +135,31 @@ public:
     bool solve();
 
     template<typename FUNC, typename... ARGS>
-    void for_each(FUNC&& f, ARGS&& ... args)
+    bool for_each(FUNC&& f, ARGS&& ... args)
     {
         for (size_t x = 0; x < ivLength; ++x)
         {
             for (size_t y = 0; y < ivLength; ++y)
             {
-                std::invoke(f, args..., ivCells[toCellIndex(x,y)], x, y);
+                const bool stop = std::invoke(f, args..., ivCells[toCellIndex(x, y)], x, y);
+                if (stop) { return true; }
             }
         }
+        return false;
     }
 
     template<typename FUNC, typename... ARGS>
-    void for_each(FUNC&& f, ARGS&& ... args) const
+    bool for_each(FUNC&& f, ARGS&& ... args) const
     {
         for (size_t x = 0; x < ivLength; ++x)
         {
             for (size_t y = 0; y < ivLength; ++y)
             {
-                std::invoke(f, args..., ivCells[toCellIndex(x, y)], x, y);
+                const bool stop = std::invoke(f, args..., ivCells[toCellIndex(x, y)], x, y);
+                if (stop) { return true; }
             }
         }
+        return false;
     }
 
     std::ostream& writeTo(std::ostream& stream) const;

@@ -58,7 +58,7 @@ namespace {
             return mmc::Object<HFONT>{CreateFontIndirect(&logFont)};
         }
 
-        void drawCell(HDC& hdc, const SudokuCell& cell, size_t xLine, size_t yLine) const
+        bool drawCell(HDC& hdc, const SudokuCell& cell, size_t xLine, size_t yLine) const
         {
             const auto xBegin = static_cast<LONG>(left + xLine * lineDistanceX);
             const auto yBegin = static_cast<LONG>(top + yLine * lineDistanceY);
@@ -80,9 +80,9 @@ namespace {
             }
 
             auto n = cell.getValue();
-            if (n == 0) { return; }
+            if (n == 0) { return false; }
             auto* str = toString(n);
-            if (not str) { return; }
+            if (not str) { return false; }
 
             RECT rect{};
             DrawText(hdc, str, 1, &rect, DT_CALCRECT);
@@ -100,6 +100,7 @@ namespace {
             else
             { SetTextColor(hdc, RGB(23, 32, 42)); }
             TextOut(hdc, x, y, str, 1);
+            return false;
         }
 
     public:

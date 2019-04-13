@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinAPIPainter", "WinAPIPain
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sudoku", "Sudoku\Sudoku.vcxproj", "{E9BA9EAC-9D6B-421C-BBE1-D7D2E7C72909}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SudokuTest", "SudokuTest\SudokuTest.vcxproj", "{D80D85F6-40E3-4743-AEC0-F7FD6A729367}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{E9BA9EAC-9D6B-421C-BBE1-D7D2E7C72909}.Release|x64.Build.0 = Release|x64
 		{E9BA9EAC-9D6B-421C-BBE1-D7D2E7C72909}.Release|x86.ActiveCfg = Release|Win32
 		{E9BA9EAC-9D6B-421C-BBE1-D7D2E7C72909}.Release|x86.Build.0 = Release|Win32
+		{D80D85F6-40E3-4743-AEC0-F7FD6A729367}.Debug|x64.ActiveCfg = Debug|x64
+		{D80D85F6-40E3-4743-AEC0-F7FD6A729367}.Debug|x64.Build.0 = Debug|x64
+		{D80D85F6-40E3-4743-AEC0-F7FD6A729367}.Debug|x86.ActiveCfg = Debug|Win32
+		{D80D85F6-40E3-4743-AEC0-F7FD6A729367}.Debug|x86.Build.0 = Debug|Win32
+		{D80D85F6-40E3-4743-AEC0-F7FD6A729367}.Release|x64.ActiveCfg = Release|x64
+		{D80D85F6-40E3-4743-AEC0-F7FD6A729367}.Release|x64.Build.0 = Release|x64
+		{D80D85F6-40E3-4743-AEC0-F7FD6A729367}.Release|x86.ActiveCfg = Release|Win32
+		{D80D85F6-40E3-4743-AEC0-F7FD6A729367}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

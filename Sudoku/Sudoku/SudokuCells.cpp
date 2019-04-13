@@ -2,7 +2,7 @@
 
 int SudokuCells::findCellIndex(const SudokuCell* cell) const
 {
-    if (not cell) { return -1; }
+    if (cell == nullptr) { return -1; }
     for (size_t i = 0; i < ivCells.size(); ++i)
     {
         auto* c = &ivCells[i];
@@ -67,20 +67,28 @@ static SudokuCell::value_t getOnlyPossibility(SudokuCell& cell)
 
 bool SudokuCells::solve()
 {
-    for (auto& cell : ivCells)
+    size_t cellsChanged = 0;
+    do
     {
-        if (cell.isSet()) { continue; }
-        if (cell.isCalculated()) { continue; }
+        cellsChanged = 0;
+        auto conflict = for_each([&](SudokuCell & cell, size_t x, size_t y)
+            {
+                if (cell.isSet()) { return false; }
+                if (cell.isCalculated()) { return false; }
+                const auto cnt = cell.countPossibilities();
+                if (cnt == 0) { return true; }
+                if (cnt == 1)
+                {
+                    cell.setCalculated();
+                    setCellValue(x, y, getOnlyPossibility(cell));
+                    ++cellsChanged;
+                    return false;
+                }
+                return false;
+            });
+        if (conflict) { return true; }
+    } while (cellsChanged > 0);
 
-        const auto cnt = cell.countPossibilities();
-        if (cnt == 0) { return true; }
-        if (cnt == 1)
-        { 
-            cell.setCalculated();
-            setCellValue(&cell,getOnlyPossibility(cell));
-            return solve();
-        }
-    }
     return false;
 }
 
@@ -100,14 +108,15 @@ inline T readBinary(std::istream& stream)
 }
 
 static const char magicWord[] = "SUDOKU";
-static void writeCell(std::ostream& stream, const SudokuCell& cell, size_t x, size_t y)
+static bool writeCell(std::ostream& stream, const SudokuCell& cell, size_t x, size_t y)
 {
-    if (cell.isCalculated()) { return; }
-    if (not cell.isSet()) { return;  }
+    if (cell.isCalculated()) { return false; }
+    if (! cell.isSet()) { return false;  }
 
     writeBinary(stream, static_cast<uint8_t>(x));
     writeBinary(stream, static_cast<uint8_t>(y));
     writeBinary(stream, cell.getValue());
+    return false;
 }
 
 std::ostream& SudokuCells::writeTo(std::ostream& stream) const
