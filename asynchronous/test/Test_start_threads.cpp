@@ -309,7 +309,7 @@ TEST( Test_start_threads, callableObjects_container_futures )
 
     EXPECT_EQ( (std::vector<int>{6,12,18,24,30}), numbers );
     EXPECT_EQ(threadCount, copyCounter);    // copied for each std::thread call
-    EXPECT_EQ(threadCount, moveCounter);    // moved into each thread context
+    EXPECT_EQ(0u, moveCounter);             // moved into each thread context
 
 }   // TEST callableObjects_container_futures
 
