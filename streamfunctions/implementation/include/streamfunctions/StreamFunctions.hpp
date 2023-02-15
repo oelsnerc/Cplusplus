@@ -877,6 +877,65 @@ struct SequencePrinter
     }
 };
 
+template<typename Container, typename SeparatorType, typename PrinterType,
+         typename = void>
+struct ContainerPrinter
+{
+    using container_t = Container;
+    using iterator_t = decltype( begin(std::declval<const container_t&>()) );
+    using printer_t = SequencePrinter<iterator_t , iterator_t , SeparatorType, PrinterType>;
+
+    const container_t & ivContainer;
+    printer_t           ivPrinter;
+
+    ContainerPrinter(const Container& container, SeparatorType&& separator, PrinterType&& printer) :
+        ivContainer(container),
+        ivPrinter{begin(ivContainer), end(ivContainer),
+                  std::forward<SeparatorType>(separator),
+                  std::forward<PrinterType>(printer)}
+    { }
+
+    template<typename StreamType>
+    StreamType& printTo(StreamType& OStream) const
+    { return ivPrinter.printTo(OStream); }
+};
+
+template<typename SeparatorType, typename PrinterType, typename... ARGS>
+struct ContainerPrinter< std::tuple<ARGS...>, SeparatorType, PrinterType>
+{
+    using container_t = std::tuple<ARGS...>;
+    using separator_t = SeparatorType;
+    using printer_t = PrinterType;
+
+    static constexpr auto size = std::tuple_size_v<container_t>;
+
+    const container_t & ivContainer;
+    separator_t ivSeparator;
+    printer_t   ivPrinter;
+
+    template<size_t INDEX, typename StreamType>
+    void printFrom(StreamType& OStream) const
+    {
+        if constexpr ( INDEX < size)
+        {
+            OStream << ivSeparator;
+            ivPrinter(OStream, std::get<INDEX>(ivContainer));
+            printFrom<INDEX+1>(OStream);
+        }
+    }
+
+    template<typename StreamType>
+    StreamType& printTo(StreamType& OStream) const
+    {
+        if constexpr ( size > 0 )
+        {
+            ivPrinter(OStream, std::get<0>(ivContainer));
+            printFrom<1>(OStream);
+        }
+        return OStream;
+    }
+};
+
 template<typename IteratorBegin, typename IteratorEnd, typename SeparatorType, typename PrinterType>
 inline auto createSequencePrinter(IteratorBegin&& ibegin, IteratorEnd&& iend,
                                   SeparatorType&& separator,
@@ -887,6 +946,15 @@ inline auto createSequencePrinter(IteratorBegin&& ibegin, IteratorEnd&& iend,
                     std::forward<IteratorEnd>(iend),
                     std::forward<SeparatorType>(separator),
                     std::forward<PrinterType>(printer)};
+}
+
+template<typename ContainerType, typename SeparatorType, typename PrinterType>
+inline auto createContainerPrinter(const ContainerType& container,
+                                   SeparatorType&& separator,
+                                   PrinterType&& printer)
+{
+    return ContainerPrinter<ContainerType, SeparatorType, PrinterType>
+            {container, std::forward<SeparatorType>(separator), std::forward<PrinterType>(printer)};
 }
 
 //******************************************************************************
@@ -916,9 +984,9 @@ inline auto seq_as(const ContainerType& container,
                    PrinterType&& printer,
                    SeparatorType&& separator = ',')
 {
-    return seq_as( begin(container), end(container),
-                   std::forward<PrinterType>(printer),
-                   std::forward<SeparatorType>(separator));
+    return Printer{createContainerPrinter(container,
+                                          std::forward<SeparatorType>(separator),
+                                          std::forward<PrinterType>(printer))};
 }
 
 template<typename STREAM, typename IteratorBegin, typename IteratorEnd, typename SeparatorType, typename PrinterType>
@@ -953,7 +1021,7 @@ inline auto seq(IteratorBegin&& ibegin, IteratorEnd&& iend, SeparatorType&& sepa
 template<typename ContainerType, typename SeparatorType=char>
 inline auto seq(const ContainerType& container, SeparatorType&& separator = ',')
 {
-    return seq(begin(container), end(container), std::forward<SeparatorType>(separator));
+    return seq_as(container, [](auto& stream, auto& e) { stream << e; }, std::forward<SeparatorType>(separator));
 }
 
 template<typename STREAM, typename IteratorBegin, typename IteratorEnd, typename SeparatorType>
@@ -984,7 +1052,7 @@ inline auto to_upper(IteratorTypeBegin&& begin, IteratorTypeEnd&& end)
 
 template<typename ContainerType>
 inline auto to_upper(const ContainerType& container)
-{ return to_upper( begin(container), end(container) ); }
+{ return seq_as( container, printer::to_upper_wrapper{}, empty ); }
 
 template<typename IteratorTypeBegin, typename IteratorTypeEnd>
 inline auto to_lower(IteratorTypeBegin&& begin, IteratorTypeEnd&& end)
@@ -996,7 +1064,7 @@ inline auto to_lower(IteratorTypeBegin&& begin, IteratorTypeEnd&& end)
 
 template<typename ContainerType>
 inline auto to_lower(const ContainerType& container)
-{ return to_lower( begin(container), end(container) ); }
+{ return seq_as( container, printer::to_lower_wrapper{}, empty ); }
 
 //------------------------------------------------------------------------------
 namespace details {
@@ -1023,10 +1091,9 @@ inline auto seq_unsigned(IteratorTypeBegin&& begin, IteratorTypeEnd&& end, unsig
 }
 
 template<unsigned char BASE, typename ContainerType, typename SeparatorType=char>
-inline auto seq_unsigned(const ContainerType& container, unsigned int Digits = 0, SeparatorType&& separator = ',') ->
-     decltype( seq_as( begin(container), end(container), Digits, std::forward<SeparatorType>(separator)) )
+inline auto seq_unsigned(const ContainerType& container, unsigned int Digits = 0, SeparatorType&& separator = ',')
 {
-    return seq_as( begin(container), end(container), Digits, std::forward<SeparatorType>(separator));
+    return seq_as( container, StreamFunc::printer::number<BASE>(Digits), std::forward<SeparatorType>(separator));
 }
 
 template<typename IteratorTypeBegin, typename IteratorTypeEnd, typename SeparatorType=char,
@@ -1041,7 +1108,7 @@ inline auto seq_hex(IteratorTypeBegin&& begin, IteratorTypeEnd&& end, unsigned i
 
 template<typename ContainerType, typename SeparatorType=char>
 inline auto seq_hex(const ContainerType& container, unsigned int Digits = 0, SeparatorType&& separator = ',')
-{ return seq_hex( begin(container), end(container), Digits, std::forward<SeparatorType>(separator)); }
+{ return seq_as( container, StreamFunc::printer::hex(Digits), std::forward<SeparatorType>(separator)); }
 
 template<typename IteratorTypeBegin, typename IteratorTypeEnd, typename SeparatorType=char,
         typename = details::enableIfSameDecayed<IteratorTypeBegin, IteratorTypeEnd> >
@@ -1055,7 +1122,7 @@ inline auto seq_bin(IteratorTypeBegin&& begin, IteratorTypeEnd&& end, unsigned i
 
 template<typename ContainerType, typename SeparatorType=char>
 inline auto seq_bin(const ContainerType& container, unsigned int Digits = 0, SeparatorType&& separator = ',')
-{ return seq_bin( begin(container), end(container), Digits, std::forward<SeparatorType>(separator)); }
+{ return seq_as( container, StreamFunc::printer::bin(Digits), std::forward<SeparatorType>(separator)); }
 
 //------------------------------------------------------------------------------
 namespace details {

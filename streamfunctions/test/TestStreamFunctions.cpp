@@ -396,6 +396,15 @@ TEST(StreamFunctions, SeqWrapperCString)
     check("eins,zwei,drei", 3, argv);
 }
 
+TEST( StreamFunctions, SeqWrapperTuple )
+{
+    auto tuple = std::make_tuple(1,2,3);
+    EXPECT_EQ("1,2,3", StreamFunc::seq(tuple));
+    EXPECT_EQ("01,02,03", StreamFunc::seq_hex(tuple,2));
+    EXPECT_EQ("Hello", StreamFunc::seq( std::make_tuple("Hello") ));
+    EXPECT_EQ("", StreamFunc::seq( std::make_tuple() ));
+}   // TEST SeqWrapperTuple
+
 //------------------------------------------------------------------------------
 TEST(StreamFunctions, SeqEmptySep)
 {
