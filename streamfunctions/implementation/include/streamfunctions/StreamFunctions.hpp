@@ -97,55 +97,127 @@ struct HasStreamOperatorOverload<T, STREAM, std::void_t<
 template<typename T, typename STREAM>
 constexpr bool hasStreamOperatorOverload = HasStreamOperatorOverload<T, STREAM>::value;
 
-//------------------------------------------------------------------------------
-} // end of namespace details
-//------------------------------------------------------------------------------
+template<typename T>
+constexpr bool isMovableRValue = std::is_rvalue_reference_v<T> && std::is_move_constructible_v< std::decay_t<T> >;
 
-/**
- * @brief the basic printer object wraps around a type
- *        that supports one of the following overloads
+//------------------------------------------------------------------------------
+ /**
+ * @brief print any object that supports one of the following overloads
  *        - print(stream, object)  (a)
  *        - object.printTo(stream) (b)
  *        - object(stream)         (c)
  *        - stream << object       (d)
+ *
+ *        NOTE: because of overload (c) the object can even be a generic lambda,
+ *              which will completely optimized out, e.g.
+ *              StreamFunc::details::printTo(std::ostream, [](auto& stream){ stream << 42; });
+ */
+template<typename STREAM, typename T>
+inline void printTo(STREAM& stream, const T& value)
+{
+    using value_t = T;
+    if constexpr( details::hasPrintOverload<value_t, STREAM> )
+    { print(stream, value); }
+    else if constexpr (details::hasMemberPrintTo<value_t, STREAM>)
+    { value.printTo(stream); }
+    else if constexpr (details::hasCallable<value_t, STREAM>)
+    { value(stream); }
+    else
+    {
+        static_assert(details::hasStreamOperatorOverload<value_t, STREAM>, "is not a printable type!");
+        stream << value;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+ * @brief wrap any type to be stored as either const ref or actual value
+ *        NOTE: we want to avoid copying if we don't need to
+ * @tparam T
+ */
+template<typename T = void, typename = void>
+struct PrintableValue
+{
+    using value_t = std::decay_t<T>;
+    const value_t& ivValue;
+
+    constexpr explicit PrintableValue(T&& object) :
+        ivValue(object)
+    {}
+
+    template<typename STREAM>
+    void printTo(STREAM& stream) const
+    { details::printTo(stream, ivValue); }
+};
+
+/**
+ * @brief  specialization for c arrays
+ *         NOTE: seems the compiler complains about a reference to an array
+ *               if it was provided as RValue Ref
+ */
+template<typename T, size_t N>
+struct PrintableValue< T(&)[N] >
+{
+    using value_t = T;
+    const value_t* ivValue;
+
+    constexpr explicit PrintableValue(const T* array) :
+            ivValue(array)
+    {}
+
+    template<typename STREAM>
+    void printTo(STREAM& stream) const
+    { details::printTo(stream, ivValue); }
+};
+
+/**
+ * @brief specialization for RValues
+ *        we can keep these value as they are unless they are not movable
+ *        e.g. that helps with storing temporary variables like iterators
+ */
+template<typename T>
+struct PrintableValue<T, std::enable_if_t< isMovableRValue<T> > >
+{
+    using value_t = std::decay_t<T>;
+    value_t ivValue;
+
+    constexpr explicit PrintableValue(value_t&& object) :
+            ivValue(std::move(object))
+    {}
+
+    template<typename STREAM>
+    void printTo(STREAM& stream) const
+    { details::printTo(stream, ivValue); }
+};
+
+/**
+ * @brief specialization for the empty printer
+ */
+template<>
+struct PrintableValue<void>
+{
+    using value_t = void;
+
+    template<typename STREAM>
+    void printTo(STREAM&) const { }
+};
+
+/**
+ * @brief the basic printer object wraps around a type
+ *        to call details::printTo
  *
  *        The wrapper itself provides overloads for
  *        - operator <<
  *        - implicit conversion into std::string
  *        - comparison to any type that is comparable to a string
  *
- *        NOTE: because of overload (c) the wrapped type can even be a generic lambda,
- *              which will completely optimized out, e.g.
- *              StreamFunc::Printer{[](auto& stream){ stream << 42; }}
- *
  * @tparam PRINTFUNC
  */
-template<typename PRINTFUNC>
-struct Printer
+template<typename VALUE = void>
+struct Printer : PrintableValue<VALUE>
 {
-    using printer_type = std::decay_t<PRINTFUNC>;
-
-    PRINTFUNC ivPrinter;
-
-    constexpr explicit Printer(PRINTFUNC printer) :
-        ivPrinter(std::move(printer))
-    {}
-
-    template<typename STREAM>
-    void printTo(STREAM& stream) const
-    {
-        if constexpr( details::hasPrintOverload<printer_type, STREAM> )
-        { print(stream, ivPrinter); }
-        else if constexpr (details::hasMemberPrintTo<printer_type, STREAM>)
-        { ivPrinter.printTo(stream); }
-        else if constexpr (details::hasCallable<printer_type, STREAM>)
-        { ivPrinter(stream); }
-        else
-        {
-            static_assert(details::hasStreamOperatorOverload<printer_type, STREAM>, "is not a PrintWrapable type!");
-            stream << ivPrinter;
-        }
-    }
+    using base_t = PrintableValue<VALUE>;
+    using base_t::base_t;
 
     template<typename STREAM>
     friend STREAM& operator << (STREAM& stream, const Printer& value)
@@ -160,10 +232,18 @@ struct Printer
         return stream;
     }
 
+    template<typename STREAM, typename T>
+    STREAM& operator () (STREAM& stream, const T& object) const
+    {
+        base_t::printTo(stream);
+        details::printTo(stream, object);
+        return stream;
+    }
+
     std::string asSring() const
     {
         std::ostringstream s;
-        printTo(s);
+        base_t::printTo(s);
         return s.str();
     }
 
@@ -189,10 +269,9 @@ struct Printer
     { return printer.operator!=(other); }
 };
 
-//******************************************************************************
-// Provide an object that does not print anything to the stream
-// useful as a separator to print nothing between values of a sequence
-constexpr Printer empty{[](auto& /*stream*/) { }};
+//------------------------------------------------------------------------------
+} // end of namespace details
+//------------------------------------------------------------------------------
 
 /**
  * @brief print the object using its overloads
@@ -202,10 +281,31 @@ constexpr Printer empty{[](auto& /*stream*/) { }};
  *        - object(stream)
  */
 template<typename T>
-inline auto identity(const T& object)
-{
-    return Printer<const T&>{object};
-}
+inline constexpr auto createPrinter(T&& object)
+{ return details::Printer<T&&>{ std::forward<T>(object) }; }
+
+//******************************************************************************
+// Provide an object that does not print anything to the stream
+// useful as a separator to print nothing between values of a sequence
+inline constexpr auto empty = details::Printer<void>{};
+
+/**
+ * @brief print the object using its overloads
+ *        - print(stream, object)
+ *        - object.printTo(stream)
+ *        - stream << object
+ *        - object(stream)
+ */
+template<typename T>
+inline constexpr auto identity(const T& object)
+{ return createPrinter(object); }
+
+/**
+ * @brief returns a callable object that prints the values as themselves
+ *        e.g. identity()(std::cout, 42)
+ * @return
+ */
+inline constexpr auto& identity() { return empty; }
 
 //------------------------------------------------------------------------------
 /**
@@ -217,7 +317,7 @@ inline auto identity(const T& object)
 template<typename STREAM, typename... ARGS>
 inline STREAM& toStream(STREAM& stream, const ARGS&... args)
 {
-    ( stream << ... << args);
+    ( stream << ... << identity(args) );
     return stream;
 }
 
@@ -258,7 +358,7 @@ inline size_t strlen(const std::string_view& str) { return str.size(); }
 //******************************************************************************
 /*
  * print a bool as "true" or "false"
- * NOTE: eventhough the name is kind of cryptic, it is still following the
+ * NOTE: even though the name is kind of cryptic, it is still following the
  *       ancient convention like "itoa", "strtoul"
  */
 inline const char* b2a(bool value)
@@ -480,15 +580,7 @@ namespace printer {
 
 //------------------------------------------------------------------------------
 // just for completeness: a callable object that prints this object
-struct identity
-{
-    template<typename StreamType, typename ObjectType>
-    StreamType& operator () (StreamType& OStream, const ObjectType& object) const
-    {
-        OStream << StreamFunc::identity(object);
-        return OStream;
-    }
-};
+using identity = details::Printer<void>;
 
 //------------------------------------------------------------------------------
 // Provides a convenient way to print a number using a different representation base
@@ -609,10 +701,10 @@ public:
 template<typename Allign_t, typename ObjectType>
 inline auto general_align(const ObjectType& object, size_t NumberOfChars, char Filler=' ')
 {
-    return Printer{[&object, NumberOfChars, Filler](auto& stream)
+    return createPrinter([&object, NumberOfChars, Filler](auto& stream)
                    {
                         Allign_t{NumberOfChars, Filler}(stream, object);
-                   }};
+                   });
 }
 
 //******************************************************************************
@@ -698,7 +790,7 @@ struct to_upper_wrapper
     }
 };
 
-// convert chars into it's lower case equivalent
+// convert chars into its lower case equivalent
 struct to_lower_wrapper
 {
     template<typename StreamType>
@@ -786,9 +878,9 @@ inline void printAs(OStream& oStream, const NumType& value, unsigned int digits)
 template<unsigned char BASE, char BASE_CHAR = 'A', typename T>
 inline auto callPrintAs(const T& value, unsigned int digits = 0)
 {
-    return Printer{[&value, digits](auto& stream){
+    return createPrinter([&value, digits](auto& stream){
         printAs<BASE, BASE_CHAR>(stream, value, digits);
-    }};
+    });
 }
 
 template<unsigned char BASE, typename NumType >
@@ -820,9 +912,9 @@ inline auto bin(const T& value, unsigned int Digits = 0)
 template <size_t BASE, size_t line_width, size_t number_width, int line_number_width, typename IteratorType>
 inline auto dump_wrapper(IteratorType ibegin, IteratorType iend)
 {
-    return Printer{[=](auto& stream){
+    return createPrinter([=](auto& stream){
         dump<BASE, line_width, number_width, line_number_width>(stream, ibegin, iend);
-    }};
+    });
 }
 
 template<typename IteratorType>
@@ -914,13 +1006,13 @@ struct ContainerPrinter< std::tuple<ARGS...>, SeparatorType, PrinterType>
     printer_t   ivPrinter;
 
     template<size_t INDEX, typename StreamType>
-    void printFrom(StreamType& OStream) const
+    void printStartingFrom(StreamType& OStream) const
     {
         if constexpr ( INDEX < size)
         {
             OStream << ivSeparator;
             ivPrinter(OStream, std::get<INDEX>(ivContainer));
-            printFrom<INDEX+1>(OStream);
+            printStartingFrom<INDEX+1>(OStream);
         }
     }
 
@@ -930,7 +1022,7 @@ struct ContainerPrinter< std::tuple<ARGS...>, SeparatorType, PrinterType>
         if constexpr ( size > 0 )
         {
             ivPrinter(OStream, std::get<0>(ivContainer));
-            printFrom<1>(OStream);
+            printStartingFrom<1>(OStream);
         }
         return OStream;
     }
@@ -973,10 +1065,10 @@ template<typename IteratorBegin, typename IteratorEnd, typename PrinterType, typ
 inline auto seq_as(IteratorBegin&& ibegin, IteratorEnd&& iend, PrinterType&& printer,
                    SeparatorType&& separator)
 {
-    return Printer{createSequencePrinter(std::forward<IteratorBegin>(ibegin),
+    return createPrinter(createSequencePrinter(std::forward<IteratorBegin>(ibegin),
                                  std::forward<IteratorEnd>(iend),
                                  std::forward<SeparatorType>(separator),
-                                 std::forward<PrinterType>(printer))};
+                                 std::forward<PrinterType>(printer)));
 }
 
 template<typename ContainerType, typename PrinterType, typename SeparatorType=char>
@@ -984,9 +1076,9 @@ inline auto seq_as(const ContainerType& container,
                    PrinterType&& printer,
                    SeparatorType&& separator = ',')
 {
-    return Printer{createContainerPrinter(container,
+    return createPrinter(createContainerPrinter(container,
                                           std::forward<SeparatorType>(separator),
-                                          std::forward<PrinterType>(printer))};
+                                          std::forward<PrinterType>(printer)));
 }
 
 template<typename STREAM, typename IteratorBegin, typename IteratorEnd, typename SeparatorType, typename PrinterType>
@@ -1014,14 +1106,14 @@ inline auto seq(IteratorBegin&& ibegin, IteratorEnd&& iend, SeparatorType&& sepa
 {
     return seq_as(std::forward<IteratorBegin>(ibegin),
                   std::forward<IteratorEnd>(iend),
-                  [](auto& stream, auto& e) { stream << e; },
+                  identity(),
                   std::forward<SeparatorType>(separator));
 }
 
 template<typename ContainerType, typename SeparatorType=char>
 inline auto seq(const ContainerType& container, SeparatorType&& separator = ',')
 {
-    return seq_as(container, [](auto& stream, auto& e) { stream << e; }, std::forward<SeparatorType>(separator));
+    return seq_as(container, identity(), std::forward<SeparatorType>(separator));
 }
 
 template<typename STREAM, typename IteratorBegin, typename IteratorEnd, typename SeparatorType>
@@ -1199,29 +1291,29 @@ static constexpr size_t getNumberOfDecimalDigits()
 template< typename UNIT, typename REP, typename PERIOD >
 inline auto time_as(std::chrono::duration<REP, PERIOD> duration)
 {
-    return Printer{[unit = std::chrono::duration_cast<UNIT>(duration)](auto& stream)
+    return createPrinter([unit = std::chrono::duration_cast<UNIT>(duration)](auto& stream)
                    {
                        stream << unit.count() << details::TimeUnit<UNIT>::suffix();
-                   }};
+                   });
 }
 
 template< typename UNIT = std::chrono::hours, typename REP, typename PERIOD >
 inline auto time(std::chrono::duration<REP, PERIOD> duration)
 {
-    return Printer{[=](auto& stream)
+    return createPrinter([=](auto& stream)
                    {
                        if (duration == UNIT::zero())
                        { stream << '0' << details::TimeUnit<UNIT>::suffix(); }
                        else
                        { details::printTime<UNIT>(stream, duration); }
-                   }};
+                   });
 }
 
 //------------------------------------------------------------------------------
 template< typename REP, typename PERIOD >
 inline auto time_log(std::chrono::duration<REP, PERIOD> duration)
 {
-    return Printer{[=](auto& stream){
+    return createPrinter([=](auto& stream){
         using namespace std::chrono;
         using small = microseconds;
         constexpr auto ratio = small::period::den;
@@ -1229,7 +1321,7 @@ inline auto time_log(std::chrono::duration<REP, PERIOD> duration)
         const auto sec = duration_cast<seconds>(duration);
         const auto rest = duration_cast<small>(duration- sec);
         stream << sec.count() << '.' << dec(rest.count(), details::getNumberOfDecimalDigits<ratio>()-1);
-    }};
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -1238,14 +1330,14 @@ inline auto time(std::chrono::time_point<CLOCK, DURATION> timepoint)
 {
     using namespace std::chrono;
     using small = microseconds;
-    return Printer{[stamp = duration_cast<small>(timepoint.time_since_epoch()).count()](auto& stream){
+    return createPrinter([stamp = duration_cast<small>(timepoint.time_since_epoch()).count()](auto& stream){
         constexpr auto ratio = small::period::den;
         time_t secs = stamp / ratio;
         auto micros = static_cast<uint64_t>(stamp % ratio);
 
         stream << std::put_time(std::gmtime(&secs), "%m-%d-%y %H:%M:%S");
         stream << '.' << dec(micros,details::getNumberOfDecimalDigits<ratio>()-1);
-    }};
+    });
 }
 
 //******************************************************************************

@@ -56,6 +56,10 @@ struct PrintToMember
 {
     int value;
 
+    explicit PrintToMember(int v) : value(v) {}
+    PrintToMember(const PrintToMember&) = delete;
+    PrintToMember(PrintToMember&&) = delete;
+
     template<typename STREAM>
     void printTo(STREAM& stream) const
     {
@@ -68,12 +72,6 @@ struct MyValue
     int value;
 
     explicit MyValue(int v) : value(v) {}
-
-    template<typename STREAM>
-    void printTo(STREAM& stream) const
-    {
-        stream << value;
-    }
 };
 
 // NOTE: the print function has to be found by ADL
@@ -114,14 +112,19 @@ struct CallOperator
 
 TEST(StreamFunctions, BasicPrinterObject)
 {
-    EXPECT_EQ("42", StreamFunc::Printer{mytypes::PrintToMember{42}});   // use the printTo member
-    EXPECT_EQ("43", StreamFunc::Printer{mytypes::MyValue{42}});         // the print overload is prefered over member printTo
-    EXPECT_EQ("44", StreamFunc::Printer{mytypes::StreamOperator{44}});  // use the operator << overload
-    EXPECT_EQ("45", StreamFunc::Printer{mytypes::CallOperator{45}});    // use the callable operator
-    EXPECT_EQ("46", StreamFunc::Printer{[](auto& stream){ stream << 46; }}); // use the callable operator
+    EXPECT_EQ("42", StreamFunc::createPrinter(mytypes::PrintToMember{42}));   // use the printTo member
+    EXPECT_EQ("43", StreamFunc::createPrinter(mytypes::MyValue{42}));         // the print overload is prefered over member printTo
+    EXPECT_EQ("44", StreamFunc::createPrinter(mytypes::StreamOperator{44}));  // use the operator << overload
+    EXPECT_EQ("45", StreamFunc::createPrinter(mytypes::CallOperator{45}));    // use the callable operator
+    EXPECT_EQ("46", StreamFunc::createPrinter([](auto& stream){ stream << 46; })); // use the callable operator
 
     EXPECT_EQ("47", StreamFunc::identity(47));
     EXPECT_EQ("48", StreamFunc::identity("48"));
+    EXPECT_EQ("49", StreamFunc::identity(mytypes::PrintToMember{49}));
+    EXPECT_EQ("50", StreamFunc::identity(mytypes::MyValue{49}));
+
+    auto a = 52;
+    EXPECT_EQ("52", StreamFunc::identity([&](auto& stream){ stream << a; }));
 }
 
 //------------------------------------------------------------------------------
@@ -403,6 +406,7 @@ TEST( StreamFunctions, SeqWrapperTuple )
     EXPECT_EQ("01,02,03", StreamFunc::seq_hex(tuple,2));
     EXPECT_EQ("Hello", StreamFunc::seq( std::make_tuple("Hello") ));
     EXPECT_EQ("", StreamFunc::seq( std::make_tuple() ));
+    EXPECT_EQ("43 Hello World 2.5", StreamFunc::seq( std::make_tuple( mytypes::MyValue{42}, "Hello", std::string("World"), 2.5), ' ' ));
 }   // TEST SeqWrapperTuple
 
 //------------------------------------------------------------------------------
