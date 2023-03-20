@@ -33,6 +33,7 @@
 #include <cctype>
 #include <chrono>
 #include <iomanip>  // put_time
+#include <tuple>
 
 #include <iosfwd>
 
@@ -694,18 +695,34 @@ public:
         }
     };
 
+    template<typename ALIGN, typename T>
+    struct General
+    {
+        using align_t = ALIGN;
+        using value_t = T;
+        const value_t& ivObject;
+        align_t        ivAlign;
+
+        explicit General(const T& object, size_t NumberOfChars, char Filler=' ') :
+                ivObject(object),
+                ivAlign(NumberOfChars, Filler)
+        {}
+
+        template<typename STREAM>
+        STREAM& printTo(STREAM& stream) const
+        {
+            ivAlign(stream, ivObject);
+            return stream;
+        };
+    };
+
 };
 
 //------------------------------------------------------------------------------
 // wrapper to be able to use the alignment functions on normal stream operators
-template<typename Allign_t, typename ObjectType>
+template<typename Align_t, typename ObjectType>
 inline auto general_align(const ObjectType& object, size_t NumberOfChars, char Filler=' ')
-{
-    return createPrinter([&object, NumberOfChars, Filler](auto& stream)
-                   {
-                        Allign_t{NumberOfChars, Filler}(stream, object);
-                   });
-}
+{ return createPrinter(Align::General<Align_t, ObjectType>(object, NumberOfChars, Filler)); }
 
 //******************************************************************************
 // Provide an object that prints an Enumeration Object and a Separator before

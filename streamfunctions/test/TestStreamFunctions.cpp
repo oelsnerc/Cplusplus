@@ -445,8 +445,11 @@ TEST(StreamFunctions, Aligment)
     EXPECT_EQ("Hello", StreamFunc::align_left("Hello", 4));
     EXPECT_EQ("Hello", StreamFunc::align_right("Hello", 4));
     EXPECT_EQ("Hello", StreamFunc::align_center("Hello", 4));
-}
 
+    EXPECT_EQ("0               ", StreamFunc::align_left(false, 16));
+    EXPECT_EQ("               1", StreamFunc::align_right(true, 16));
+    EXPECT_EQ("       0        ", StreamFunc::align_center(false, 16));
+}
 
 TEST(StreamFunctions, to_upper)
 {
